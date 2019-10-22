@@ -8,6 +8,8 @@ __date__ = "22.10.2019"
 
 import argparse
 import networkx as nx
+import os
+import statistics
 
 def arg_parser():
     Parser = argparse.ArgumentParser(
@@ -67,9 +69,6 @@ def get_starting_nodes(graphe):
         if len(graphe.pred[node]) == 0:
             entry_node_list.append(node)
     return(entry_node_list)
-def std():
-    pass
-
 
 def get_sink_nodes(graphe):
     exit_node_list = []
@@ -79,24 +78,70 @@ def get_sink_nodes(graphe):
     return (exit_node_list)
 
 def get_contigs(graphe,starting_list, exit_node_list):
+    list_tuple = []
+    for start in starting_list:
+        for exit in exit_node_list:
+            for path in nx.all_simple_paths(graphe,start, exit):
+                contig = path[0]
+                for i in range(1,len(path)):
+                    contig += path[i][-1]
+                list_tuple.append((contig,len(contig)))
+    return list_tuple
+
+def fill(text, width=80):
+    """Split text with a line return to respect fasta format"""
+    return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
+
+
+def save_contigs(list_tuple,out):
+    i = 0
+    with open(out,"w") as output:
+        for tuple in list_tuple:
+            frst_line =">contig_"+str(i)+" len="+str(tuple[1])+"\n"
+            seq = fill(tuple[0])
+            output.write(frst_line)
+            output.write(seq+"\n")
+            i += 1
+
+def std(list_values):
+    return statistics.stdev(list_values)
+
+def path_average_weight(graphe, path):
+    list_weight =[]
+    for u,v,e in graphe.subgraph(path).edges(data=True):
+        list_weight.append(e["weight"])
+    return statistics.mean(list_weight)
+
+def remove_paths(graphe, list_path, delete_entry_node, delete_sink_node):
+    for path in list_path:
+        if (delete_entry_node == True and delete_sink_node == True):
+            graphe.remove_nodes_from(path)
+        elif (delete_entry_node == True and delete_sink_node == False):
+            graphe.remove_nodes_from(path[0:-1])
+        elif (delete_entry_node == False and delete_sink_node == True):
+            graphe.remove_nodes_from(path[1:])
+        elif (delete_entry_node == False and delete_sink_node == False):
+            graphe.remove_nodes_from(path[1:-1])
+    return(graphe)
+
+def select_best_path(graphe, list_path, liste_long_path,list_av_weight, delete_entry_node=False, delete_sink_node=False):
+    max_weight = max(list_av_weight)
+    max_index=[i for i, weight in enumerate(list_av_weight) if weight== max_weight]
+    #s'il y a plusieurs
+    if len(max_index)>1:
+        max_length = 0
+        for elt in max_index:
+            if liste_long_path[elt] > max_length):
+                max_length = len(path[elt])
+            elif liste_long_path[elt] == max_length:
+
+            else:
 
 
 
+    else:
+        best_path=list_path[i]
 
-def path_average_weight():
-    pass
-
-
-def remove_paths():
-    pass
-
-
-def select_best_path():
-    pass
-
-
-def save_contigs():
-    pass
 
 
 
@@ -122,7 +167,10 @@ def main():
     graphe = build_graph(dict_kmer)
     list_start = get_starting_nodes(graphe)
     list_end = get_sink_nodes(graphe)
-    print(list_start)
-    print(list_end)
+    list_tuple = get_contigs(graphe,list_start, list_end)
+    out= "contigs.fasta"
+    save_contigs(list_tuple,out)
+    remove_paths(graphe, list_path, delete_entry_node, delete_sink_node)
+
 if __name__ == "__main__":
     main()
