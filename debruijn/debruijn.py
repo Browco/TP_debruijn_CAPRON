@@ -37,17 +37,22 @@ def arg_parser():
     return (fastq_file,kmers_length, config_file)
 
 def read_fastq(fastq_file):
+	"""Open file and retrieve only the sequences in fastq file"""
     with open(fastq_file,"r") as file:
         for line in file:
-            yield next(file).strip()
+            yield next(file).strip() #cut the \n at the end
             next(file)
             next(file)
 
 def cut_kmer(seq, kmers_length):
+	"""For each sequence, retrieve the kmers associated"""
+	#We only need the kmers with a given length and not the smaller one
     for i in range(0,(len(seq)-kmers_length+1)):
         yield seq[i:i+kmers_length]
 
 def build_kmer_dict(fastq_file,kmers_length):
+	""" Create a dict with the kmers in a seq and their \
+	occurences."""
     dict_kmer={}
     for seq in read_fastq(fastq_file):
         for kmer in cut_kmer(seq, kmers_length):
@@ -58,19 +63,23 @@ def build_kmer_dict(fastq_file,kmers_length):
     return dict_kmer
 
 def build_graph(dict_kmer):
-    graphe = nx.DiGraph()
+	"""Create a graph with nodes and edges with the kmers"""
+    graphe = nx.DiGraph() #Creates an oriented graph
     for key in dict_kmer.keys():
         graphe.add_edge(key[:-1],key[1:],weight=dict_kmer[key])
     return(graphe)
 
 def get_starting_nodes(graphe):
+	""" Get the nodes without any ancestors/predecessor"""
     entry_node_list = []
     for node in graphe.nodes():
-        if len(graphe.pred[node]) == 0:
+    	#pred, retrieves the predecessors
+        if len(graphe.pred[node]) == 0: 
             entry_node_list.append(node)
     return(entry_node_list)
 
 def get_sink_nodes(graphe):
+	"""Get the nodes without any descending/successors"""
     exit_node_list = []
     for node in graphe.nodes():
         if len(graphe.succ[node]) == 0:
@@ -124,16 +133,28 @@ def remove_paths(graphe, list_path, delete_entry_node, delete_sink_node):
             graphe.remove_nodes_from(path[1:-1])
     return(graphe)
 
-def select_best_path(graphe, list_path, liste_long_path,list_av_weight, delete_entry_node=False, delete_sink_node=False):
+def select_best_path(graphe, list_path, list_long_path,list_av_weight, delete_entry_node=False, delete_sink_node=False):
     max_weight = max(list_av_weight)
     max_index=[i for i, weight in enumerate(list_av_weight) if weight== max_weight]
-    #s'il y a plusieurs
+    # Retrieve path with max average weight and their indexes
+    #if there is more than one
     if len(max_index)>1:
-        max_length = 0
-        for elt in max_index:
-            if liste_long_path[elt] > max_length):
-                max_length = len(path[elt])
-            elif liste_long_path[elt] == max_length:
+    	max_index_path = [list_long_path[i] for i in max_index]
+    	max_len_path=max(max_path)
+    	if len(max_len_path)>1:
+    		random.seed(9001)
+    		random.randint(1,len(max_len_path))
+
+
+    		
+    	# max_path=[i for i, weight in enumerate(list_av_weight) if weight== max_weight]
+     #    max_length = 0
+     #    for index in max_index:
+     #    	#amongst the index with max weight, the one with the longest paths:
+     #        if (liste_long_path[index] > max_length):
+     #            max_length = liste_long_path[index]
+     #        elif liste_long_path[elt] == max_length:
+
 
             else:
 
