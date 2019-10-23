@@ -10,6 +10,8 @@ import argparse
 import networkx as nx
 import os
 import statistics
+import random
+random.seed(9001)
 
 def arg_parser():
     Parser = argparse.ArgumentParser(
@@ -37,7 +39,7 @@ def arg_parser():
     return (fastq_file,kmers_length, config_file)
 
 def read_fastq(fastq_file):
-	"""Open file and retrieve only the sequences in fastq file"""
+    """Open file and retrieve only the sequences in fastq file"""
     with open(fastq_file,"r") as file:
         for line in file:
             yield next(file).strip() #cut the \n at the end
@@ -45,14 +47,14 @@ def read_fastq(fastq_file):
             next(file)
 
 def cut_kmer(seq, kmers_length):
-	"""For each sequence, retrieve the kmers associated"""
-	#We only need the kmers with a given length and not the smaller one
+    """For each sequence, retrieve the kmers associated"""
+    #We only need the kmers with a given length and not the smaller one
     for i in range(0,(len(seq)-kmers_length+1)):
         yield seq[i:i+kmers_length]
 
 def build_kmer_dict(fastq_file,kmers_length):
-	""" Create a dict with the kmers in a seq and their \
-	occurences."""
+    """ Create a dict with the kmers in a seq and their \
+    occurences."""
     dict_kmer={}
     for seq in read_fastq(fastq_file):
         for kmer in cut_kmer(seq, kmers_length):
@@ -63,23 +65,23 @@ def build_kmer_dict(fastq_file,kmers_length):
     return dict_kmer
 
 def build_graph(dict_kmer):
-	"""Create a graph with nodes and edges with the kmers"""
+    """Create a graph with nodes and edges with the kmers"""
     graphe = nx.DiGraph() #Creates an oriented graph
     for key in dict_kmer.keys():
         graphe.add_edge(key[:-1],key[1:],weight=dict_kmer[key])
     return(graphe)
 
 def get_starting_nodes(graphe):
-	""" Get the nodes without any ancestors/predecessor"""
+    """ Get the nodes without any ancestors/predecessor"""
     entry_node_list = []
     for node in graphe.nodes():
-    	#pred, retrieves the predecessors
+        #pred, retrieves the predecessors
         if len(graphe.pred[node]) == 0: 
             entry_node_list.append(node)
     return(entry_node_list)
 
 def get_sink_nodes(graphe):
-	"""Get the nodes without any descending/successors"""
+    """Get the nodes without any descending/successors"""
     exit_node_list = []
     for node in graphe.nodes():
         if len(graphe.succ[node]) == 0:
@@ -132,41 +134,63 @@ def remove_paths(graphe, list_path, delete_entry_node, delete_sink_node):
             graphe.remove_nodes_from(path[1:-1])
     return(graphe)
 
-def select_best_path(graphe, list_path, list_long_path,list_av_weight, delete_entry_node=False, delete_sink_node=False):
+def select_best_path(graphe, list_path, list_long_path,list_av_weight,
+ delete_entry_node=False, delete_sink_node=False):
     max_weight = max(list_av_weight)
     max_index=[i for i, weight in enumerate(list_av_weight) if weight== max_weight]
     # Retrieve path with max average weight and their indexes
     #if there is more than one
     if len(max_index)>1:
-    	max_path = [list_long_path[i] for i in max_index]
-    	max_len_path=max(max_path)
-	max_path_index=[i for i, weight in enumerate(list_long_path) if weight== max_len_path]
-    	if len(max_len_path)>1:
-    		random.seed(9001)
-    		max= random.randint(1,len(max_len_path))
-#recuperer le max path. Prendre tous les paths sauf lui. Le remove.		
-    	else:
-else	
+        #Retrieve paths associated with the max weight
+        path_with_maxweight = [list_long_path[i] for i in max_index]
+        #maximum path len in the list
+        max_len_path=max(path_with_maxweight)
+        max_path_index=[i for i, pathlong in enumerate(list_long_path) if pathlong == max_len_path]
+        if len(max_path_index)>1:
+            random_choice=random.randint(1,len(max_len_path))
+            print(random_choice)
+            index=max_path_index[random_choice]
+            print(index)
+            list_path.pop(index[0])
+            #recuperer le max path. Prendre tous les paths sauf lui. Le remove du graphe.       
+            remove_paths(graphe,list_path, delete_entry_node=False, delete_sink_node=False)          
+        else:
+            list_path.pop(max_path_index[0])
+            remove_paths(graphe,list_path, delete_entry_node=False, delete_sink_node=False)
+    else:   
+        list_path.pop(max_index[0])
+        remove_paths(graphe,list_path, delete_entry_node=False, delete_sink_node=False)
+    return graphe
 
-            else:
-    else:
-        best_path=list_path[i]
 
+def solve_bubble(graphe, anc_node, desc_node):
+    """
+    """
+    list_path=[path for path in nx.all_simple_paths(graphe, anc_node, desc_node)]
+    list_long_path=[len(path) for path in nx.all_simple_paths(graphe, anc_node, desc_node)]
+    list_av_weight=[path_average_weight(graphe,path) for path in nx.all_simple_paths(graphe, anc_node, desc_node)]
 
+    resolved_graphe = select_best_path(graphe, list_path, list_long_path, 
+        list_av_weight,delete_entry_node=False, delete_sink_node=False)
+    return resolved_graphe
 
+def simplify_bubbles(graphe):
+    """
+    """
+    graphe_simplified = graphe.copy()
 
+    list_starting = get_starting_nodes(graphe_simplified)
+    list_end = get_sink_nodes(graphe_simplified)
+    #is there a path, for each starting node and each ending node 
+    for anc_node in list_starting:
+        for desc_node in list_end:
+            if nx.has_path(graphe_simplified, anc_node, desc_node) :
+                graphe_simplified = solve_bubble(graphe_simplified, anc_node, desc_node)
 
-def solve_bubble():
-    pass
-
-
-def simplify_bubbles():
-    pass
-
+    return graphe_simplified
 
 def solve_entry_tips():
     pass
-
 
 def solve_out_tips():
     pass
