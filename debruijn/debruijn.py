@@ -101,7 +101,6 @@ def fill(text, width=80):
     """Split text with a line return to respect fasta format"""
     return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
 
-
 def save_contigs(list_tuple,out):
     i = 0
     with open(out,"w") as output:
@@ -139,27 +138,17 @@ def select_best_path(graphe, list_path, list_long_path,list_av_weight, delete_en
     # Retrieve path with max average weight and their indexes
     #if there is more than one
     if len(max_index)>1:
-    	max_index_path = [list_long_path[i] for i in max_index]
+    	max_path = [list_long_path[i] for i in max_index]
     	max_len_path=max(max_path)
+	max_path_index=[i for i, weight in enumerate(list_long_path) if weight== max_len_path]
     	if len(max_len_path)>1:
     		random.seed(9001)
-    		random.randint(1,len(max_len_path))
-
-
-    		
-    	# max_path=[i for i, weight in enumerate(list_av_weight) if weight== max_weight]
-     #    max_length = 0
-     #    for index in max_index:
-     #    	#amongst the index with max weight, the one with the longest paths:
-     #        if (liste_long_path[index] > max_length):
-     #            max_length = liste_long_path[index]
-     #        elif liste_long_path[elt] == max_length:
-
+    		max= random.randint(1,len(max_len_path))
+#recuperer le max path. Prendre tous les paths sauf lui. Le remove.		
+    	else:
+else	
 
             else:
-
-
-
     else:
         best_path=list_path[i]
 
