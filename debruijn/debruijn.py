@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 __description__ = \
 """
-
+This script was created in the purpose of transform a given \
+fastq file to a De Bruijn graphe.
 """
 __author__ = "Coralie Capron"
 __date__ = "22.10.2019"
@@ -15,7 +16,8 @@ random.seed(9001)
 
 def arg_parser():
     Parser = argparse.ArgumentParser(
-        description="This script was written in the purpose ")
+        description="This script was written in the purpose of transform a given \
+fastq file to a De Bruijn graphe ")
 
     Parser.add_argument('i', metavar='FASTQ_SE',
                         help='Fastq file single end')
@@ -23,8 +25,8 @@ def arg_parser():
                         help='The kmers length', type = int, default =21)
 #    Parser.add_argument('r', metavar='REF_GENOME',
  #                       help='Reference genome', nargs='?')
-    Parser.add_argument('o', metavar='CONFIG_FILE',
-                        help='Config file')
+    Parser.add_argument('o', metavar='OUTPUT_FILE',
+                        help='Output contigs file')
     Args = Parser.parse_args()
 
     # print(Args.i.split(".")[1])
@@ -34,9 +36,9 @@ def arg_parser():
     # else:
     fastq_file = Args.i
     kmers_length = Args.k
-    config_file = Args.o
+    output_file = Args.o
 
-    return (fastq_file,kmers_length, config_file)
+    return (fastq_file,kmers_length, output_file)
 
 def read_fastq(fastq_file):
     """Open file and retrieve only the sequences in fastq file"""
@@ -105,10 +107,10 @@ def fill(text, width=80):
     """Split text with a line return to respect fasta format"""
     return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
 
-def save_contigs(list_tuple,out):
+def save_contigs(list_tuple,output_file):
     """Create a file with contigs written and their lengths"""
     i = 0
-    with open(out,"w") as output:
+    with open(output_file,"w") as output:
         for tuple in list_tuple:
             frst_line =">contig_"+str(i)+" len="+str(tuple[1])+"\n"
             seq = fill(tuple[0])
@@ -201,14 +203,13 @@ def solve_out_tips():
     pass
 
 def main():
-    fastq_file,kmers_length, config_file = arg_parser()
+    fastq_file,kmers_length, output_file = arg_parser()
     dict_kmer= build_kmer_dict(fastq_file,kmers_length)
     graphe = build_graph(dict_kmer)
     list_start = get_starting_nodes(graphe)
     list_end = get_sink_nodes(graphe)
     list_tuple = get_contigs(graphe,list_start, list_end)
-    out= "contigs.fasta"
-    save_contigs(list_tuple,out)
+    save_contigs(list_tuple,output_file)
     simplify_bubbles(graphe)
 
 if __name__ == "__main__":
