@@ -89,6 +89,8 @@ def get_sink_nodes(graphe):
     return (exit_node_list)
 
 def get_contigs(graphe,starting_list, exit_node_list):
+    """Return the contigs in a graphe by using starting \
+    and ending nodes"""
     list_tuple = []
     for start in starting_list:
         for exit in exit_node_list:
@@ -104,6 +106,7 @@ def fill(text, width=80):
     return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
 
 def save_contigs(list_tuple,out):
+    """Create a file with contigs written and their lengths"""
     i = 0
     with open(out,"w") as output:
         for tuple in list_tuple:
@@ -114,15 +117,18 @@ def save_contigs(list_tuple,out):
             i += 1
 
 def std(list_values):
+    """Return standard deviation of a list"""
     return statistics.stdev(list_values)
 
 def path_average_weight(graphe, path):
+    """Add to a list the weights of a graphe and calculate list mean weight"""
     list_weight =[]
     for u,v,e in graphe.subgraph(path).edges(data=True):
         list_weight.append(e["weight"])
     return statistics.mean(list_weight)
 
 def remove_paths(graphe, list_path, delete_entry_node, delete_sink_node):
+    """Remove path in a graphe with/without the entry and ending nodes"""
     for path in list_path:
         if (delete_entry_node == True and delete_sink_node == True):
             graphe.remove_nodes_from(path)
@@ -136,6 +142,7 @@ def remove_paths(graphe, list_path, delete_entry_node, delete_sink_node):
 
 def select_best_path(graphe, list_path, list_long_path,list_av_weight,
  delete_entry_node=False, delete_sink_node=False):
+    """ Select the best path when more than one exists and remove the others"""
     max_weight = max(list_av_weight)
     max_index=[i for i, weight in enumerate(list_av_weight) if weight== max_weight]
     # Retrieve path with max average weight and their indexes
@@ -153,19 +160,18 @@ def select_best_path(graphe, list_path, list_long_path,list_av_weight,
             print(index)
             list_path.pop(index[0])
             #recuperer le max path. Prendre tous les paths sauf lui. Le remove du graphe.       
-            remove_paths(graphe,list_path, delete_entry_node=False, delete_sink_node=False)          
+            remove_paths(graphe,list_path, delete_entry_node, delete_sink_node)
         else:
             list_path.pop(max_path_index[0])
-            remove_paths(graphe,list_path, delete_entry_node=False, delete_sink_node=False)
-    else:   
+            remove_paths(graphe,list_path, delete_entry_node, delete_sink_node)
+    else:
         list_path.pop(max_index[0])
-        remove_paths(graphe,list_path, delete_entry_node=False, delete_sink_node=False)
+        remove_paths(graphe,list_path, delete_entry_node, delete_sink_node)
     return graphe
 
 
 def solve_bubble(graphe, anc_node, desc_node):
-    """
-    """
+    """Determine in a bubble """
     list_path=[path for path in nx.all_simple_paths(graphe, anc_node, desc_node)]
     list_long_path=[len(path) for path in nx.all_simple_paths(graphe, anc_node, desc_node)]
     list_av_weight=[path_average_weight(graphe,path) for path in nx.all_simple_paths(graphe, anc_node, desc_node)]
@@ -175,8 +181,7 @@ def solve_bubble(graphe, anc_node, desc_node):
     return resolved_graphe
 
 def simplify_bubbles(graphe):
-    """
-    """
+    """"""
     graphe_simplified = graphe.copy()
 
     list_starting = get_starting_nodes(graphe_simplified)
@@ -204,7 +209,7 @@ def main():
     list_tuple = get_contigs(graphe,list_start, list_end)
     out= "contigs.fasta"
     save_contigs(list_tuple,out)
-    remove_paths(graphe, list_path, delete_entry_node, delete_sink_node)
+    simplify_bubbles(graphe)
 
 if __name__ == "__main__":
     main()
